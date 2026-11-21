@@ -1,0 +1,5 @@
+# original downloads (zips, FBX, .blend) — the converted models live in modelos/
+descargas/
+# test page and OS clutter
+galeria.html
+.DS_Store

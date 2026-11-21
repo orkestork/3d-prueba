@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mundo de Cristal</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;500;600&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #120818; font-family: 'Inter', system-ui, sans-serif; color: #fff; }
+  canvas { display: block; }
+  #loader { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: radial-gradient(circle at 50% 40%, #3a1650, #0d0512 70%); z-index: 30; transition: opacity 1.2s ease; }
+  #loader h1 { font-family: 'Cinzel', serif; font-size: clamp(28px, 5vw, 60px); letter-spacing: .2em; margin-bottom: 10px;
+    background: linear-gradient(90deg, #8ff0ff, #ff8fd8, #c7a2ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  #loader p { opacity: .7; letter-spacing: .2em; font-size: 12px; margin-bottom: 26px; text-transform: uppercase; }
+  #bar { width: min(320px, 70vw); height: 3px; background: rgba(255,255,255,.12); border-radius: 3px; overflow: hidden; }
+  #bar div { height: 100%; width: 0; background: linear-gradient(90deg, #8ff0ff, #ff8fd8); transition: width .2s; }
+  #enter { margin-top: 32px; padding: 12px 34px; border-radius: 30px; border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.06);
+    color: #fff; font: 500 15px 'Inter'; letter-spacing: .12em; cursor: pointer; opacity: 0; pointer-events: none; transition: all .4s; }
+  #enter.ready { opacity: 1; pointer-events: auto; }
+  #enter:hover { background: rgba(255,255,255,.16); box-shadow: 0 0 30px rgba(255,143,216,.45); }
+  .fade { opacity: 0; transition: opacity 1.5s; }
+  #title { position: fixed; top: 6vh; width: 100%; text-align: center; pointer-events: none; z-index: 5; transition: opacity 2.5s; }
+  #title h2 { font-family: 'Cinzel', serif; font-weight: 700; font-size: clamp(30px, 5.5vw, 76px); letter-spacing: .18em; text-shadow: 0 0 30px rgba(255,160,220,.6), 0 2px 8px rgba(60,0,60,.6); }
+  #title p { margin-top: 8px; font-size: clamp(12px, 1.3vw, 16px); letter-spacing: .25em; opacity: .85; text-transform: uppercase; }
+  #hud { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); display: flex; gap: 8px; align-items: center; z-index: 6;
+    padding: 9px 12px; border-radius: 40px; background: rgba(20,8,30,.5); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(14px); }
+  #hud button { padding: 8px 14px; border-radius: 22px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.06); color: #fff;
+    font: 500 13px 'Inter'; cursor: pointer; transition: all .25s; white-space: nowrap; }
+  #hud button:hover { background: rgba(255,255,255,.18); }
+  #hud button.on { background: linear-gradient(135deg, rgba(143,240,255,.35), rgba(255,143,216,.35)); border-color: rgba(255,255,255,.45); }
+  #hud button.primary { background: linear-gradient(135deg, #2fd6ff, #ff3fae); border: none; font-weight: 600; }
+  #hud label { font-size: 12px; opacity: .8; margin-left: 4px; }
+  #hud input[type=range] { width: 90px; accent-color: #ff8fd8; }
+  #hint { position: fixed; top: 18px; right: 22px; font-size: 12px; letter-spacing: .04em; line-height: 1.7; text-align: right; z-index: 6; text-shadow: 0 1px 4px rgba(0,0,0,.7); }
+  #counter { position: fixed; top: 18px; left: 22px; font-size: 13px; z-index: 6; letter-spacing: .08em; text-shadow: 0 1px 4px rgba(0,0,0,.6); }
+  #counter b { font-size: 20px; color: #ffb3ea; }
+  #labels { position: fixed; inset: 0; pointer-events: none; z-index: 4; }
+  .label { position: absolute; left: 0; top: 0; pointer-events: auto; cursor: pointer; white-space: nowrap; font-family: 'Cinzel', serif; font-weight: 700;
+    font-size: 14px; letter-spacing: .12em; padding: 5px 12px; border-radius: 16px; background: rgba(20,8,30,.35); border: 1px solid rgba(255,255,255,.25);
+    text-shadow: 0 0 10px rgba(255,180,230,.8); backdrop-filter: blur(6px); transition: background .2s; }
+  .label:hover { background: rgba(255,143,216,.35); }
+  #bubble { position: fixed; left: 0; top: 0; z-index: 8; transform: translate(-50%, calc(-100% - 12px)) scale(.6); opacity: 0; pointer-events: none;
+    max-width: 280px; padding: 10px 14px; border-radius: 14px; background: rgba(255,250,245,.96); color: #2a1a30; font-size: 14px; line-height: 1.35;
+    box-shadow: 0 8px 30px rgba(40,0,60,.35); transition: opacity .25s, transform .25s cubic-bezier(.2,1.6,.4,1); }
+  #bubble.show { opacity: 1; transform: translate(-50%, calc(-100% - 12px)) scale(1); }
+  #bubble::after { content: ''; position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); border: 8px solid transparent; border-bottom: 0; border-top-color: rgba(255,250,245,.96); }
+  #bubble b { display: block; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #b03a8a; margin-bottom: 3px; }
+  #tip { position: fixed; z-index: 9; pointer-events: none; padding: 4px 9px; border-radius: 10px; background: rgba(20,8,30,.75); font-size: 12px; opacity: 0; transition: opacity .15s; }
+  #toast { position: fixed; top: 70px; left: 50%; transform: translate(-50%, -10px); z-index: 9; padding: 10px 18px; border-radius: 20px; background: rgba(20,8,30,.7);
+    border: 1px solid rgba(255,255,255,.2); font-size: 14px; opacity: 0; transition: all .4s; backdrop-filter: blur(10px); pointer-events: none; }
+  #playerHud { position: fixed; left: 22px; bottom: 90px; display: flex; align-items: center; gap: 12px; z-index: 6; opacity: 0; transition: opacity .6s;
+    padding: 10px 14px; border-radius: 16px; background: rgba(20,8,30,.55); border: 1px solid rgba(255,255,255,.15); backdrop-filter: blur(10px); }
+  #playerHud .lv { font-family: 'Cinzel', serif; font-size: 12px; text-align: center; line-height: 1; }
+  #playerHud .lv b { display: block; font-size: 24px; color: #ffd23a; }
+  #playerHud .bars { width: 220px; display: flex; flex-direction: column; gap: 5px; }
+  #playerHud .hp { position: relative; height: 16px; border-radius: 8px; background: rgba(0,0,0,.5); overflow: hidden; }
+  #hpFill { height: 100%; width: 100%; background: linear-gradient(90deg,#ff3a5a,#ff8a5a); transition: width .2s; }
+  #hpText { position: absolute; inset: 0; font-size: 11px; font-weight: 600; text-align: center; line-height: 16px; text-shadow: 0 1px 2px #000; }
+  #playerHud .xp { height: 5px; border-radius: 3px; background: rgba(0,0,0,.5); overflow: hidden; }
+  #xpFill { height: 100%; width: 0; background: linear-gradient(90deg,#8ff0ff,#c7a2ff); transition: width .3s; }
+  #playerHud .gold { font-size: 15px; } #playerHud .gold b { color: #ffd23a; }
+  #lockHint { position: fixed; left: 50%; top: 38%; transform: translate(-50%,-50%); z-index: 8; text-align: center; font-size: 15px; line-height: 1.7; opacity: 0; transition: opacity .4s;
+    padding: 16px 24px; border-radius: 16px; background: rgba(20,8,30,.7); border: 1px solid rgba(255,255,255,.2); pointer-events: none; backdrop-filter: blur(8px); }
+  #lockHint small { opacity: .8; font-size: 12px; }
+  #vignetteHit { position: fixed; inset: 0; pointer-events: none; z-index: 5; opacity: 0; transition: opacity .25s; box-shadow: inset 0 0 160px 40px rgba(255,0,30,.75); }
+  #questLog { position: fixed; left: 22px; top: 56px; z-index: 6; width: 300px; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+  #questLog .q { padding: 9px 12px; border-radius: 12px; background: rgba(20,8,30,.55); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(8px); font-size: 12px; line-height: 1.4; }
+  #questLog .q.ready { border-color: rgba(120,255,140,.6); }
+  #questLog .q b { display: block; font-size: 13px; color: #ffe08a; margin-bottom: 2px; }
+  #questLog .q i { display: block; height: 4px; border-radius: 2px; background: rgba(0,0,0,.45); margin-top: 6px; overflow: hidden; }
+  #questLog .q i em { display: block; height: 100%; background: linear-gradient(90deg,#ffd23a,#ff8a3a); }
+  #questLog .q small { opacity: .75; }
+  #questLog .hintq { font-size: 12px; opacity: .85; text-shadow: 0 1px 4px #000; }
+  #prompt { position: fixed; left: 50%; bottom: 150px; transform: translateX(-50%); z-index: 8; padding: 9px 18px; border-radius: 20px; font-size: 15px;
+    background: rgba(20,8,30,.7); border: 1px solid rgba(255,220,120,.5); opacity: 0; transition: opacity .2s; pointer-events: none; }
+  #prompt b { display: inline-block; min-width: 22px; padding: 1px 6px; margin-right: 4px; border-radius: 6px; background: #ffd23a; color: #2a1a00; text-align: center; }
+  #fade { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; z-index: 20; transition: opacity .35s; }
+  #shop { position: fixed; inset: 0; z-index: 25; display: none; align-items: center; justify-content: center; background: rgba(10,4,16,.55); backdrop-filter: blur(4px); }
+  #shop.show { display: flex; }
+  #shop .box { width: min(560px, 94vw); max-height: 86vh; overflow: auto; border-radius: 20px; padding: 18px; background: linear-gradient(160deg, #3a1d4a, #1a0c24); border: 1px solid rgba(255,220,140,.35); box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+  #shop .head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  #shop h3 { font-family: 'Cinzel', serif; font-size: 20px; flex: 1; color: #ffe08a; }
+  #shop .g { font-weight: 700; color: #ffd23a; }
+  #shop .x { background: none; border: 0; color: #fff; font-size: 20px; cursor: pointer; }
+  #shop .it { display: flex; align-items: center; gap: 12px; padding: 10px; margin-bottom: 8px; border-radius: 14px; background: rgba(255,255,255,.06); }
+  #shop .it.have { opacity: .6; }
+  #shop .ic { font-size: 30px; width: 44px; text-align: center; }
+  #shop .tx { flex: 1; } #shop .tx b { display: block; } #shop .tx small { display: block; opacity: .75; font-size: 12px; }
+  #shop .it button { padding: 8px 14px; border-radius: 12px; border: 0; font: 600 13px Inter; cursor: pointer; background: linear-gradient(135deg,#ffd23a,#ff9a3a); color: #2a1400; }
+  #shop .it button:disabled { background: rgba(255,255,255,.15); color: #ccc; cursor: default; }
+  #shop .foot { font-size: 12px; opacity: .7; text-align: center; margin-top: 6px; }
+  #touchUI { display: none; position: fixed; inset: 0; pointer-events: none; z-index: 9; }
+  #joy { position: fixed; width: 120px; height: 120px; border-radius: 50%; background: rgba(255,255,255,.12); border: 2px solid rgba(255,255,255,.3); left: 40px; bottom: 140px; opacity: .5; }
+  #joy.on { opacity: 1; }
+  #knob { position: absolute; left: 35px; top: 35px; width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,.55); }
+  #tbtns { position: fixed; right: 16px; bottom: 120px; display: grid; grid-template-columns: repeat(3, 62px); gap: 10px; pointer-events: auto; }
+  #tbtns button { width: 62px; height: 62px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); background: rgba(20,8,30,.55); color: #fff; font-size: 24px; touch-action: none; }
+  #tbtns button.big { background: rgba(255,80,80,.45); }
+  @media (pointer: coarse) { #lockHint { display: none; } #playerHud { bottom: auto; top: 10px; left: 50%; transform: translateX(-50%); } #questLog { width: 220px; font-size: 11px; } }
+  #skill { font-size: 11px; opacity: .9; margin-top: 2px; } #skill b { color: #8fffb0; }
+  #charSelect { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 30%, rgba(70,25,90,.92), rgba(10,4,16,.96)); opacity: 0; transition: opacity .35s; overflow: auto; }
+  #charSelect.show { opacity: 1; }
+  #charSelect .cs { text-align: center; padding: 24px; }
+  #charSelect h2 { font-family: 'Cinzel', serif; font-size: clamp(26px, 4vw, 44px); letter-spacing: .15em; background: linear-gradient(90deg,#8ff0ff,#ff8fd8,#ffd23a); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  #charSelect .sub { opacity: .65; font-size: 13px; margin: 6px 0 20px; }
+  #charSelect .cards { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; }
+  #charSelect .card { width: 260px; padding: 14px; border-radius: 22px; background: linear-gradient(170deg, rgba(255,255,255,.1), rgba(255,255,255,.03)); border: 1px solid rgba(255,255,255,.18); cursor: pointer; transition: transform .25s, box-shadow .25s, border-color .25s; text-align: left; }
+  #charSelect .card:hover { transform: translateY(-8px) scale(1.02); box-shadow: 0 18px 50px rgba(255,120,220,.35); border-color: rgba(255,200,240,.6); }
+  #charSelect .card.cur { border-color: #ffd23a; }
+  #charSelect .pic { height: 250px; border-radius: 16px; background: radial-gradient(circle at 50% 60%, rgba(255,180,230,.35), rgba(60,20,90,.2) 70%) center/contain no-repeat; background-size: cover; background-position: center; }
+  #charSelect h3 { font-family: 'Cinzel', serif; font-size: 22px; margin: 10px 0 4px; color: #ffe08a; }
+  #charSelect .card p { font-size: 13px; opacity: .85; line-height: 1.4; min-height: 54px; }
+  #charSelect .bars { margin: 10px 0; display: grid; gap: 4px; }
+  #charSelect .bars div { display: flex; align-items: center; gap: 8px; font-size: 11px; } #charSelect .bars span { width: 64px; opacity: .8; }
+  #charSelect .bars i { flex: 1; height: 6px; border-radius: 3px; background: rgba(0,0,0,.4); overflow: hidden; } #charSelect .bars em { display: block; height: 100%; background: linear-gradient(90deg,#8ff0ff,#ff8fd8); }
+  #charSelect .skill { font-size: 12px; padding: 8px 10px; border-radius: 10px; background: rgba(0,0,0,.25); line-height: 1.35; } #charSelect .skill b { color: #8fffb0; }
+  #charSelect .card button { width: 100%; margin-top: 10px; padding: 10px; border: 0; border-radius: 12px; font: 600 14px Inter; color: #2a1400; background: linear-gradient(135deg,#ffd23a,#ff9a3a); cursor: pointer; }
+  #credits { position: fixed; right: 14px; bottom: 8px; font-size: 10px; opacity: .55; z-index: 6; letter-spacing: .05em; }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+  @media (max-width: 760px) { #hud { flex-wrap: wrap; justify-content: center; width: 94vw; border-radius: 20px; } #hint { display: none; } }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<div id="loader">
+  <h1>MUNDO DE CRISTAL</h1>
+  <p>un archipiélago flotante lleno de vida</p>
+  <div id="bar"><div></div></div>
+  <button id="enter">ENTRAR ✦</button>
+</div>
+<div id="title" class="fade"><h2>MUNDO DE CRISTAL</h2><p>diez islas · enemigos · misiones · dragones que puedes montar</p></div>
+<div id="counter" class="fade">Cristales despertados: <b id="count">0</b> / <span id="total">0</span></div>
+<div id="hint" class="fade">Arrastra para girar · Rueda para zoom<br>Toca cristales, setas y personajes ✦ · Clic en el nombre de una isla para viajar</div>
+<div id="labels" class="fade"></div>
+<div id="bubble"><b></b><span></span></div>
+<div id="tip"></div>
+<div id="toast"></div>
+<div id="playerHud">
+  <div class="lv">NV <b id="lvl">1</b></div>
+  <div class="bars">
+    <div class="hp"><div id="hpFill"></div><span id="hpText">100 / 100</span></div>
+    <div class="xp"><div id="xpFill"></div></div>
+    <div id="skill"></div>
+  </div>
+  <div class="gold">🪙 <b id="gold">0</b><br>🧪 <b id="potions">1</b> <small>(R)</small></div>
+</div>
+<div id="lockHint">🖱️ Haz clic en el mundo para controlar la cámara con el ratón · <b>Esc</b> para soltarlo<br>
+  <small>WASD mover · Shift correr · Espacio saltar · Clic atacar · Clic derecho habilidad · E interactuar · R poción · F montar dragón</small></div>
+<div id="crosshair"></div>
+<div id="vignetteHit"></div>
+<div id="prompt"></div>
+<div id="fade"></div>
+<div id="credits">Personajes: KayKit · Kay Lousberg &nbsp;|&nbsp; Animales: Quaternius &nbsp;(CC0)</div>
+<div id="hud" class="fade">
+  <button id="bExplore" class="primary">🎮 Explorar</button>
+  <button id="bTime">🌙 Noche</button>
+  <button id="bWhale">🐋 Ballena</button>
+  <button id="bDragon">🐉 Dragón</button>
+  <button id="bRotate" class="on">⟳ Auto-giro</button>
+  <button id="bSound" class="on">♪ Sonido</button>
+  <button id="bMagic">✦ Magia</button>
+  <button id="bHero" title="Elegir personaje">👤</button>
+  <button id="bReset" title="Nueva partida">↺</button>
+  <label for="glow">Brillo</label><input id="glow" type="range" min="0" max="2.5" step="0.05" value="0.75">
+</div>
+<script type="module" src="mundo/main.js"></script>
+</body>
+</html>
