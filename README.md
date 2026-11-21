@@ -10,9 +10,13 @@ Hace falta un servidor web estático (los módulos ES no cargan desde `file://`)
 python3 -m http.server 8765
 ```
 
-Abre <http://127.0.0.1:8765/mundo.html>. Se necesita conexión a internet para cargar three.js y las fuentes desde CDN.
+Abre <http://127.0.0.1:8765/> (o directamente `mundo.html`). Se necesita conexión a internet para cargar three.js y las fuentes desde CDN.
 
-`index.html` es la primera versión: la Isla de Cristal sola, interactiva.
+`isla.html` es la primera versión: la Isla de Cristal sola, interactiva.
+
+## Publicar en GitHub Pages
+
+En **Settings → Pages**, elige *Deploy from a branch*, rama `main`, carpeta `/ (root)`. El juego queda en `https://<usuario>.github.io/<repo>/`.
 
 ## Controles (modo Explorar)
 
