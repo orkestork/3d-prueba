@@ -116,6 +116,7 @@ new GLTFLoader().load('isla.glb', async (gltf) => {
   setInterval(saveGame, 8000);
   $('#total').textContent = crystals.length;
   bar.style.width = '100%';
+  $('#loader p').textContent = '¡todo listo! pulsa entrar';
   $('#enter').classList.add('ready');
   if (params.has('auto')) $('#enter').click();
 }, (e) => { if (e.total) bar.style.width = (e.loaded / e.total * 60).toFixed(0) + '%'; },
